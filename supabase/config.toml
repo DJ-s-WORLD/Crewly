@@ -1,0 +1,8 @@
+# Set to your Supabase project ref (from project URL) when using the CLI.
+project_id = "ckepekynnvhdgwcrfzje"
+
+# Required for browser CORS: gateway must not reject OPTIONS before the function runs.
+# Also disable "Enforce JWT" for ai-chat in Dashboard → Edge Functions if you deploy without CLI.
+
+[functions.ai-chat]
+verify_jwt = false

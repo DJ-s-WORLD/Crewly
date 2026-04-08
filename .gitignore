@@ -1,0 +1,31 @@
+node_modules/
+dist/
+.env
+.env.local
+env.txt
+*.log
+.DS_Store
+
+# Build outputs / caches
+build/
+out/
+.turbo/
+.cache/
+.vite/
+coverage/
+
+# Env files (never commit secrets)
+.env.*
+!.env.example
+
+# Supabase local dev
+supabase/.branches/
+supabase/.temp/
+
+# Vercel / Netlify
+.vercel/
+.netlify/
+
+# IDE
+.vscode/
+.idea/
