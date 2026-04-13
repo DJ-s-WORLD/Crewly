@@ -13,17 +13,8 @@ import { toast } from "sonner";
 import { getFollowCounts } from "@/services/social";
 import { fetchCurrentUserPostCount } from "@/services/posts";
 import { cn } from "@/lib/utils";
-
-const moods = [
-  { emoji: "😊", label: "Happy" },
-  { emoji: "😎", label: "Confident" },
-  { emoji: "🔥", label: "Fired Up" },
-  { emoji: "😴", label: "Tired" },
-  { emoji: "😤", label: "Frustrated" },
-  { emoji: "🧘", label: "Calm" },
-  { emoji: "🤔", label: "Thinking" },
-  { emoji: "😢", label: "Sad" },
-];
+import TodayMoodSection from "@/components/TodayMoodSection";
+import { moodLabelForEmoji } from "@/lib/moodDisplay";
 
 const Profile = () => {
   const location = useLocation();
@@ -35,6 +26,7 @@ const Profile = () => {
   const [streak, setStreak] = useState(0);
   const [totalCompleted, setTotalCompleted] = useState(0);
   const [mood, setMood] = useState("");
+  const [moodUpdatedAt, setMoodUpdatedAt] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [showPoster, setShowPoster] = useState(false);
@@ -51,7 +43,11 @@ const Profile = () => {
     if (!user) return;
     setLoading(true);
     const [profileRes, tasksRes, counts, postCount] = await Promise.all([
-      supabase.from("profiles").select("name, streak, avatar_url, mood, bg_color, uid, is_private").eq("user_id", user.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("name, streak, avatar_url, mood, mood_updated_at, bg_color, uid, is_private")
+        .eq("user_id", user.id)
+        .maybeSingle(),
       supabase.from("tasks").select("id", { count: "exact" }).eq("user_id", user.id).eq("completed", true),
       getFollowCounts(user.id),
       fetchCurrentUserPostCount(),
@@ -61,6 +57,7 @@ const Profile = () => {
       setStreak(profileRes.data.streak || 0);
       setAvatarUrl(profileRes.data.avatar_url || "");
       setMood(profileRes.data.mood || "");
+      setMoodUpdatedAt(profileRes.data.mood_updated_at ?? null);
       setUid(profileRes.data.uid ?? null);
       setIsPrivate(!!profileRes.data.is_private);
     }
@@ -109,12 +106,17 @@ const Profile = () => {
 
   const handleMoodSelect = async (emoji: string) => {
     if (!user) return;
+    const now = new Date().toISOString();
     setMood(emoji);
-    await supabase.from("profiles").update({ mood: emoji }).eq("user_id", user.id);
+    setMoodUpdatedAt(now);
+    await supabase
+      .from("profiles")
+      .update({ mood: emoji, mood_updated_at: now })
+      .eq("user_id", user.id);
     toast.success("Mood updated!");
   };
 
-  const moodLabel = moods.find((m) => m.emoji === mood)?.label;
+  const moodLabel = moodLabelForEmoji(mood);
   const bioLine = mood && moodLabel ? `${mood} ${moodLabel}` : mood || null;
 
   const joinedLabel = user?.created_at
@@ -133,7 +135,7 @@ const Profile = () => {
     <div className="min-h-screen bg-background pb-28">
       <ProfileHeader username={name || "Profile"} onOpenSettings={() => setSettingsOpen(true)} />
 
-      <main className="mx-auto max-w-lg px-4 py-5 space-y-6">
+      <main className="mx-auto max-w-lg px-2 py-5 space-y-6">
         <ProfileHeaderHorizontal
           avatarUrl={avatarUrl}
           username={name}
@@ -158,35 +160,13 @@ const Profile = () => {
           bioLine={bioLine}
         />
 
-        <div
-          className={cn(
-            "rounded-2xl border border-border/60 bg-card/60 p-4 shadow-md",
-            "backdrop-blur-sm transition-shadow hover:shadow-lg"
-          )}
-        >
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3 text-center">
-            Today&apos;s mood
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
-            {moods.map((m) => (
-              <button
-                key={m.emoji}
-                type="button"
-                onClick={() => void handleMoodSelect(m.emoji)}
-                className={cn(
-                  "flex shrink-0 flex-col items-center gap-1 rounded-2xl px-3 py-2 min-w-[4.25rem] transition-all",
-                  "border border-transparent active:scale-95",
-                  mood === m.emoji
-                    ? "bg-primary/15 ring-2 ring-primary shadow-sm scale-[1.02]"
-                    : "bg-muted/40 hover:bg-muted/70"
-                )}
-              >
-                <span className="text-2xl">{m.emoji}</span>
-                <span className="text-[9px] text-muted-foreground font-medium">{m.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <TodayMoodSection
+          mood={mood}
+          moodUpdatedAt={moodUpdatedAt}
+          interactive
+          selectedMood={mood}
+          onSelectMood={(e) => void handleMoodSelect(e)}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div

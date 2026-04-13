@@ -63,6 +63,11 @@ export async function cancelFollowRequest(receiverId: string) {
 }
 
 export async function getFollowCounts(userId: string) {
+  const { data, error } = await supabase.rpc("get_public_follow_counts", { p_user_id: userId });
+  if (!error && data && typeof data === "object" && "followers" in data && "following" in data) {
+    const o = data as { followers: number; following: number };
+    return { followers: Number(o.followers) || 0, following: Number(o.following) || 0 };
+  }
   const [followers, following] = await Promise.all([
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
@@ -82,28 +87,48 @@ export async function isFollowing(targetUserId: string) {
   return !!data;
 }
 
+function rpcUuidArray(data: unknown): string[] {
+  if (data == null) return [];
+  if (!Array.isArray(data)) return [];
+  return data.map((x) => String(x)).filter(Boolean);
+}
+
 /** Profiles of users who follow `forUserId`. */
 export async function fetchFollowersProfiles(forUserId: string): Promise<PublicProfile[]> {
-  const { data: follows, error } = await supabase.from("follows").select("follower_id").eq("following_id", forUserId);
-  if (error || !follows?.length) return [];
-  const ids = [...new Set(follows.map((f) => f.follower_id))];
+  const { data: idRpc, error: rpcErr } = await supabase.rpc("profile_follower_ids", { p_profile_user_id: forUserId });
+  let ids: string[] = [];
+  if (!rpcErr) {
+    ids = rpcUuidArray(idRpc);
+  } else {
+    const { data: follows, error } = await supabase.from("follows").select("follower_id").eq("following_id", forUserId);
+    if (error || !follows?.length) return [];
+    ids = [...new Set(follows.map((f) => f.follower_id))];
+  }
+  if (!ids.length) return [];
   const { data: profs } = await supabase
     .from("profiles")
-    .select("user_id, name, avatar_url, streak")
+    .select("user_id, name, avatar_url, streak, uid, is_private")
     .in("user_id", ids);
-  return profs ?? [];
+  return (profs ?? []) as PublicProfile[];
 }
 
 /** Profiles of users `forUserId` follows. */
 export async function fetchFollowingProfiles(forUserId: string): Promise<PublicProfile[]> {
-  const { data: follows, error } = await supabase.from("follows").select("following_id").eq("follower_id", forUserId);
-  if (error || !follows?.length) return [];
-  const ids = [...new Set(follows.map((f) => f.following_id))];
+  const { data: idRpc, error: rpcErr } = await supabase.rpc("profile_following_ids", { p_profile_user_id: forUserId });
+  let ids: string[] = [];
+  if (!rpcErr) {
+    ids = rpcUuidArray(idRpc);
+  } else {
+    const { data: follows, error } = await supabase.from("follows").select("following_id").eq("follower_id", forUserId);
+    if (error || !follows?.length) return [];
+    ids = [...new Set(follows.map((f) => f.following_id))];
+  }
+  if (!ids.length) return [];
   const { data: profs } = await supabase
     .from("profiles")
-    .select("user_id, name, avatar_url, streak")
+    .select("user_id, name, avatar_url, streak, uid, is_private")
     .in("user_id", ids);
-  return profs ?? [];
+  return (profs ?? []) as PublicProfile[];
 }
 
 export async function searchUsers(query: string, excludeUserId?: string, limit = 12) {

@@ -32,7 +32,10 @@ export type PostWithMeta = PostRow & {
 
 export type PostCommentWithProfile = Tables<"post_comments"> & { profile: PublicProfile | null };
 
-const FEED_PAGE = 10;
+const FEED_PAGE = 12;
+
+/** `global` = discovery (RLS: public posts + posts from people you follow). `following` = only followed + self (future toggle). */
+export type FeedScope = "global" | "following";
 
 /** Works before/after `archived` column exists (missing column → undefined → visible). */
 function isPostVisibleInFeedAndProfile(post: PostRow): boolean {
@@ -54,7 +57,7 @@ async function enrichPosts(posts: PostRow[], userId: string): Promise<PostWithMe
   const authorIds = [...new Set(posts.map((p) => p.user_id))];
 
   const [{ data: profiles }, { data: likeRows }, { data: myLikes }, { data: commentRows }, { data: tagRows }] = await Promise.all([
-    supabase.from("profiles").select("user_id, name, avatar_url, streak").in("user_id", authorIds),
+    supabase.from("profiles").select("user_id, name, avatar_url, streak, uid, is_private").in("user_id", authorIds),
     supabase.from("post_likes").select("post_id").in("post_id", ids),
     supabase.from("post_likes").select("post_id").eq("user_id", userId).in("post_id", ids),
     supabase.from("post_comments").select("post_id").in("post_id", ids),
@@ -83,7 +86,7 @@ async function enrichPosts(posts: PostRow[], userId: string): Promise<PostWithMe
   if (allTaggedIds.length) {
     const { data: tagProfs } = await supabase
       .from("profiles")
-      .select("user_id, name, avatar_url, streak")
+      .select("user_id, name, avatar_url, streak, uid, is_private")
       .in("user_id", allTaggedIds);
     tagProfMap = new Map((tagProfs ?? []).map((p) => [p.user_id, p]));
   }
@@ -98,28 +101,55 @@ async function enrichPosts(posts: PostRow[], userId: string): Promise<PostWithMe
   }));
 }
 
-export async function fetchPostFeedPage(page: number): Promise<{ data: PostWithMeta[]; hasMore: boolean }> {
+/**
+ * Home / discovery feed.
+ *
+ * **Global:** uses `feed_posts_page` RPC (SECURITY DEFINER) so privacy matches Instagram **on the server**:
+ * public authors → everyone; private authors → self + followers only. Falls back to table + RLS if RPC is missing.
+ *
+ * **Following:** optional “circle only” mode — same privacy rules, restricted author set.
+ */
+export async function fetchPostFeedPage(
+  page: number,
+  scope: FeedScope = "global"
+): Promise<{ data: PostWithMeta[]; hasMore: boolean }> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [], hasMore: false };
 
-  const memberIds = await followingPlusSelfIds();
-  if (!memberIds?.length) return { data: [], hasMore: false };
+  const offset = page * FEED_PAGE;
+  const to = offset + FEED_PAGE - 1;
 
-  const from = page * FEED_PAGE;
-  const to = from + FEED_PAGE - 1;
+  if (scope === "global") {
+    const { data: rpcRows, error: rpcErr } = await supabase.rpc("feed_posts_page", {
+      p_limit: FEED_PAGE,
+      p_offset: offset,
+    });
+    if (!rpcErr && rpcRows) {
+      const rows = rpcRows as PostRow[];
+      const visible = rows.filter(isPostVisibleInFeedAndProfile);
+      const enriched = await enrichPosts(visible, user.id);
+      return { data: enriched, hasMore: rows.length === FEED_PAGE };
+    }
+  }
 
-  const { data: posts, error } = await supabase
-    .from("posts")
-    .select("*")
-    .in("user_id", memberIds)
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  let req = supabase.from("posts").select("*").order("created_at", { ascending: false }).range(offset, to);
+  if (scope === "following") {
+    const memberIds = await followingPlusSelfIds();
+    if (!memberIds?.length) return { data: [], hasMore: false };
+    req = supabase.from("posts").select("*").in("user_id", memberIds).order("created_at", { ascending: false }).range(offset, to);
+  }
 
+  const { data: posts, error } = await req;
   if (error || !posts) return { data: [], hasMore: false };
 
   const visible = posts.filter(isPostVisibleInFeedAndProfile);
   const enriched = await enrichPosts(visible, user.id);
   return { data: enriched, hasMore: posts.length === FEED_PAGE };
+}
+
+/** Instagram-style home feed (alias for `fetchPostFeedPage(page, "global")`). */
+export async function fetchFeedPosts(page: number) {
+  return fetchPostFeedPage(page, "global");
 }
 
 export async function fetchPostById(postId: string): Promise<PostWithMeta | null> {
@@ -249,7 +279,7 @@ export async function fetchCurrentUserPostsPage(
   return { data: visible, hasMore: data.length === PROFILE_POSTS_PAGE };
 }
 
-/** Paginated posts for another member's profile grid (RLS must allow SELECT; see public-profile migration). */
+/** Paginated posts for another member's profile grid (RLS + RPC; public profiles use definer RPC). */
 export async function fetchUserPostsPage(
   profileUserId: string,
   page: number
@@ -257,15 +287,26 @@ export async function fetchUserPostsPage(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: [], hasMore: false };
 
-  const from = page * PROFILE_POSTS_PAGE;
-  const to = from + PROFILE_POSTS_PAGE - 1;
+  const offset = page * PROFILE_POSTS_PAGE;
 
+  const { data: rpcRows, error: rpcErr } = await supabase.rpc("profile_posts_page", {
+    p_profile_user_id: profileUserId,
+    p_limit: PROFILE_POSTS_PAGE,
+    p_offset: offset,
+  });
+  if (!rpcErr && rpcRows) {
+    const rows = rpcRows as PostRow[];
+    const visible = rows.filter(isPostVisibleInFeedAndProfile);
+    return { data: visible, hasMore: rows.length === PROFILE_POSTS_PAGE };
+  }
+
+  const to = offset + PROFILE_POSTS_PAGE - 1;
   const { data, error } = await supabase
     .from("posts")
     .select("*")
     .eq("user_id", profileUserId)
     .order("created_at", { ascending: false })
-    .range(from, to);
+    .range(offset, to);
 
   if (error || !data) return { data: [], hasMore: false };
   const visible = data.filter(isPostVisibleInFeedAndProfile);
@@ -280,11 +321,16 @@ export async function fetchCurrentUserPostCount(): Promise<number> {
 
 /** Public / profile view: non-archived posts by user (subject to RLS). */
 export async function fetchUserPostCountForUser(userId: string): Promise<number> {
-  const { count, error } = await supabase
+  const { data, error } = await supabase.rpc("get_public_post_count_for_user", { p_user_id: userId });
+  if (!error && data !== null && data !== undefined) {
+    const n = typeof data === "number" ? data : Number(data);
+    if (!Number.isNaN(n)) return n;
+  }
+  const { count, error: cErr } = await supabase
     .from("posts")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
-  if (error) return 0;
+  if (cErr) return 0;
   return count ?? 0;
 }
 

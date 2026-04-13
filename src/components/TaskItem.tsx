@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { Check, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatTaskCompletionDate } from "@/lib/formatTaskCompletionDate";
 
 interface TaskItemProps {
   id: string;
   title: string;
   completed: boolean;
+  completedAt?: string | null;
   timeHHMM?: string | null;
   onToggle: (id: string, completed: boolean) => void;
 }
@@ -20,7 +22,7 @@ function format12h(timeHHMM: string) {
   return `${hour12}:${mm} ${ampm}`;
 }
 
-const TaskItem = ({ id, title, completed, timeHHMM, onToggle }: TaskItemProps) => {
+const TaskItem = ({ id, title, completed, completedAt, timeHHMM, onToggle }: TaskItemProps) => {
   const [animating, setAnimating] = useState(false);
   const timeLabel = useMemo(() => (timeHHMM ? format12h(timeHHMM) : ""), [timeHHMM]);
 
@@ -62,6 +64,11 @@ const TaskItem = ({ id, title, completed, timeHHMM, onToggle }: TaskItemProps) =
           <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <Clock className="h-3.5 w-3.5" />
             {timeLabel} <span className="opacity-70">(IST)</span>
+          </span>
+        ) : null}
+        {completed && completedAt ? (
+          <span className="mt-1 block text-[11px] font-medium text-success/90">
+            {formatTaskCompletionDate(completedAt)}
           </span>
         ) : null}
       </div>

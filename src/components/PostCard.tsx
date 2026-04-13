@@ -6,25 +6,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
 import PostOptionsMenu from "@/components/PostOptionsMenu";
+import FollowButton from "@/components/FollowButton";
 import type { PostWithMeta } from "@/services/posts";
 import { cn } from "@/lib/utils";
 import { renderCaptionHighlights } from "@/components/TagUserInput";
+import { useAuth } from "@/context/AuthContext";
 
 type Props = {
   post: PostWithMeta;
   /** Show inline comments (detail page). */
   expandComments?: boolean;
+  /** Feed / discovery: show follow control for other users’ posts. */
+  showAuthorFollow?: boolean;
   onPostUpdated?: () => void;
   onPostRemoved?: () => void;
 };
 
-const PostCard = ({ post, expandComments = false, onPostUpdated, onPostRemoved }: Props) => {
+const PostCard = ({ post, expandComments = false, showAuthorFollow = false, onPostUpdated, onPostRemoved }: Props) => {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [commentBump, setCommentBump] = useState(0);
   const commentsOk = post.comments_enabled !== false;
 
   const textOnly = !post.image_url;
   const caption = (post.content || "").trim();
+  const showFollow = showAuthorFollow && !!user?.id && post.user_id !== user.id;
 
   return (
     <article
@@ -52,6 +58,9 @@ const PostCard = ({ post, expandComments = false, onPostUpdated, onPostRemoved }
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
           </p>
         </div>
+        {showFollow ? (
+          <FollowButton targetUserId={post.user_id} isPrivate={!!post.profile?.is_private} size="sm" />
+        ) : null}
         <PostOptionsMenu
           post={post}
           onPostUpdated={() => onPostUpdated?.()}

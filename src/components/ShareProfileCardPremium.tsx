@@ -27,7 +27,7 @@ const ShareProfileCardPremium = ({ name, avatarUrl, postsCount, followers, follo
         useCORS: true,
       });
       const link = document.createElement("a");
-      link.download = `lifepilot-${(name || "profile").toLowerCase().replace(/\s+/g, "-")}.png`;
+      link.download = `crewly-${(name || "profile").toLowerCase().replace(/\s+/g, "-")}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
       toast.success("Saved to downloads");
@@ -37,7 +37,7 @@ const ShareProfileCardPremium = ({ name, avatarUrl, postsCount, followers, follo
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200 mb-20">
       <div className="relative w-full max-w-sm sm:rounded-3xl rounded-t-3xl bg-background border border-border shadow-2xl p-4 sm:p-5 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
         <button
           type="button"
@@ -61,7 +61,7 @@ const ShareProfileCardPremium = ({ name, avatarUrl, postsCount, followers, follo
         >
           <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(rgba(255,255,255,0.18)_1px,transparent_1px)] [background-size:14px_14px]" />
           <div className="relative">
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">LifePilot</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">CREWLY</p>
 
             <div className="mt-4 flex justify-center">
               <div className="rounded-full p-1.5 bg-white/10 shadow-lg">
@@ -74,8 +74,8 @@ const ShareProfileCardPremium = ({ name, avatarUrl, postsCount, followers, follo
               </div>
             </div>
 
-            <h2 className="mt-4 text-2xl font-extrabold tracking-tight text-white truncate">{name || "Pilot"}</h2>
-            <p className="mt-1 text-xs text-white/70">Building consistency every day</p>
+            <h2 className="text-2xl font-extrabold text-white">{name || "Pilot"}</h2>
+            <p className="mt-2 text-xs text-white/70">Building consistency every day</p>
 
             <div className="mt-6 grid grid-cols-3 gap-2">
               {[
@@ -91,9 +91,9 @@ const ShareProfileCardPremium = ({ name, avatarUrl, postsCount, followers, follo
             </div>
 
             <div className="mt-5 rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-left">
-              <p className="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Share my profile</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/60 font-semibold">Follow me on Crewly</p>
               <p className="text-sm text-white/90 leading-snug mt-1">
-                Join me on LifePilot — daily wins, tasks, and streaks.
+                Join with me on Crewly to stay connected and motivated — daily tasks, and streaks.
               </p>
             </div>
           </div>

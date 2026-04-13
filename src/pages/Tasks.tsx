@@ -9,6 +9,7 @@ import { recordTaskCompletionActivity } from "@/lib/activities";
 import { ListTodo, CheckCircle2, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { maybeSetMotivatedMoodOnTaskComplete } from "@/services/taskMood";
 
 interface Task {
   id: string;
@@ -20,6 +21,7 @@ interface Task {
   timezone?: string;
   scheduled_at?: string | null;
   remind_at?: string | null;
+  reminder_push_sent_at?: string | null;
 }
 
 type Filter = "all" | "completed" | "pending";
@@ -151,6 +153,7 @@ const Tasks = () => {
       await updateStreak(user.id);
       const { data: p } = await supabase.from("profiles").select("name").eq("user_id", user.id).maybeSingle();
       await recordTaskCompletionActivity(user.id, p?.name || profileName || user.user_metadata?.name || "You");
+      await maybeSetMotivatedMoodOnTaskComplete(user.id);
       toast.success("Task completed! 🎉");
     }
   };
@@ -228,6 +231,7 @@ const Tasks = () => {
                     id={task.id}
                     title={task.title}
                     completed={task.completed}
+                    completedAt={task.completed_at}
                     timeHHMM={task.time_hhmm ?? null}
                     onToggle={handleToggleTask}
                   />

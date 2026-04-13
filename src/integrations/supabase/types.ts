@@ -293,6 +293,7 @@ export type Database = {
           is_private: boolean
           last_active_date: string | null
           mood: string | null
+          mood_updated_at: string | null
           name: string
           streak: number
           uid: number | null
@@ -307,6 +308,7 @@ export type Database = {
           is_private?: boolean
           last_active_date?: string | null
           mood?: string | null
+          mood_updated_at?: string | null
           name?: string
           streak?: number
           uid?: number | null
@@ -321,6 +323,7 @@ export type Database = {
           is_private?: boolean
           last_active_date?: string | null
           mood?: string | null
+          mood_updated_at?: string | null
           name?: string
           streak?: number
           uid?: number | null
@@ -401,6 +404,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_devices: {
+        Row: {
+          created_at: string
+          device_token: string
+          id: string
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_token: string
+          id?: string
+          platform?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_token?: string
+          id?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           completed: boolean
@@ -408,6 +438,7 @@ export type Database = {
           created_at: string
           id: string
           remind_at: string | null
+          reminder_push_sent_at: string | null
           scheduled_at: string | null
           time_hhmm: string | null
           timezone: string
@@ -420,6 +451,7 @@ export type Database = {
           created_at?: string
           id?: string
           remind_at?: string | null
+          reminder_push_sent_at?: string | null
           scheduled_at?: string | null
           time_hhmm?: string | null
           timezone?: string
@@ -432,6 +464,7 @@ export type Database = {
           created_at?: string
           id?: string
           remind_at?: string | null
+          reminder_push_sent_at?: string | null
           scheduled_at?: string | null
           time_hhmm?: string | null
           timezone?: string
@@ -472,6 +505,34 @@ export type Database = {
       notify_followers_task_completion: {
         Args: { p_message: string }
         Returns: null
+      }
+      get_public_follow_counts: {
+        Args: { p_user_id: string }
+        Returns: Record<string, unknown>
+      }
+      get_public_post_count_for_user: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      follows_select_visible: {
+        Args: { p_follower: string; p_following: string }
+        Returns: boolean
+      }
+      profile_posts_page: {
+        Args: { p_profile_user_id: string; p_limit: number; p_offset: number }
+        Returns: Database["public"]["Tables"]["posts"]["Row"][]
+      }
+      profile_follower_ids: {
+        Args: { p_profile_user_id: string }
+        Returns: string[]
+      }
+      profile_following_ids: {
+        Args: { p_profile_user_id: string }
+        Returns: string[]
+      }
+      feed_posts_page: {
+        Args: { p_limit: number; p_offset: number }
+        Returns: Database["public"]["Tables"]["posts"]["Row"][]
       }
     }
     Enums: {

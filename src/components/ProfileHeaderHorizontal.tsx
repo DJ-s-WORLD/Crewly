@@ -80,8 +80,8 @@ const ProfileHeaderHorizontal = ({
   return (
     <section
       className={cn(
-        "relative rounded-2xl border border-border/60 bg-card/80 p-4 shadow-sm",
-        "backdrop-blur-sm"
+        "relative rounded-2xl bg-card/80 p-3",
+        
       )}
     >
       {onShare ? (
@@ -120,7 +120,7 @@ const ProfileHeaderHorizontal = ({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 justify-end sm:justify-start">
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-3 [scrollbar-width:thin]">
               <Stat label="Posts" value={postsCount} />
               <Stat label="Followers" value={followers} onClick={onFollowersClick} />
               <Stat label="Following" value={following} onClick={onFollowingClick} />

@@ -9,15 +9,18 @@ import {
   cancelFollowRequest,
   type FollowState,
 } from "@/services/social";
+import { cn } from "@/lib/utils";
 
 type Props = {
   targetUserId: string;
   isPrivate: boolean;
   disabled?: boolean;
   onStateChange?: (state: FollowState) => void;
+  className?: string;
+  size?: "default" | "sm";
 };
 
-const FollowButton = ({ targetUserId, isPrivate, disabled, onStateChange }: Props) => {
+const FollowButton = ({ targetUserId, isPrivate, disabled, onStateChange, className, size = "default" }: Props) => {
   const [state, setState] = useState<FollowState>("none");
   const [busy, setBusy] = useState(false);
 
@@ -83,7 +86,8 @@ const FollowButton = ({ targetUserId, isPrivate, disabled, onStateChange }: Prop
   return (
     <Button
       type="button"
-      className="rounded-xl"
+      size={size === "sm" ? "sm" : "default"}
+      className={cn("rounded-xl shrink-0", size === "sm" && "h-8 px-3 text-xs", className)}
       variant={state === "following" ? "outline" : state === "requested" ? "secondary" : "default"}
       disabled={busy || disabled}
       onClick={() => void onClick()}

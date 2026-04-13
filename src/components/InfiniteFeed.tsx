@@ -1,17 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import PostCard from "@/components/PostCard";
-import { fetchPostFeedPage, type PostWithMeta } from "@/services/posts";
+import { fetchFeedPosts, fetchPostFeedPage, type FeedScope, type PostWithMeta } from "@/services/posts";
 import { Loader2 } from "lucide-react";
 
 type Props = {
   onPostUpdated?: () => void;
   /** Bumps refetch when changed (e.g. after navigation). */
   refreshKey?: string | number;
+  /** `global` = public discovery + people you follow (RLS). `following` = legacy circle-only (future toggle). */
+  feedScope?: FeedScope;
+  /** Show follow on each post header (feed / discovery). */
+  showAuthorFollow?: boolean;
   headerExtra?: React.ReactNode;
   emptyCta?: React.ReactNode;
 };
 
-const InfiniteFeed = ({ onPostUpdated, refreshKey = 0, headerExtra, emptyCta }: Props) => {
+const InfiniteFeed = ({
+  onPostUpdated,
+  refreshKey = 0,
+  feedScope = "global",
+  showAuthorFollow = true,
+  headerExtra,
+  emptyCta,
+}: Props) => {
   const [posts, setPosts] = useState<PostWithMeta[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -34,11 +45,12 @@ const InfiniteFeed = ({ onPostUpdated, refreshKey = 0, headerExtra, emptyCta }: 
   const refresh = useCallback(async () => {
     setLoading(true);
     pageRef.current = 0;
-    const { data, hasMore: more } = await fetchPostFeedPage(0);
+    const { data, hasMore: more } =
+      feedScope === "global" ? await fetchFeedPosts(0) : await fetchPostFeedPage(0, "following");
     setPosts(data);
     setHasMore(more);
     setLoading(false);
-  }, []);
+  }, [feedScope]);
 
   useEffect(() => {
     void refresh();
@@ -49,13 +61,14 @@ const InfiniteFeed = ({ onPostUpdated, refreshKey = 0, headerExtra, emptyCta }: 
     guardRef.current = true;
     setLoadingMore(true);
     const next = pageRef.current + 1;
-    const { data, hasMore: more } = await fetchPostFeedPage(next);
+    const { data, hasMore: more } =
+      feedScope === "global" ? await fetchFeedPosts(next) : await fetchPostFeedPage(next, "following");
     pageRef.current = next;
     setPosts((prev) => mergePosts(prev, data));
     setHasMore(more);
     setLoadingMore(false);
     guardRef.current = false;
-  }, [hasMore, loading, loadingMore, mergePosts]);
+  }, [hasMore, loading, loadingMore, mergePosts, feedScope]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -85,13 +98,21 @@ const InfiniteFeed = ({ onPostUpdated, refreshKey = 0, headerExtra, emptyCta }: 
           </div>
         ) : posts.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center space-y-4">
-            <p className="text-sm text-muted-foreground">No posts yet. Follow friends or share your first moment.</p>
+            <p className="text-sm text-muted-foreground">
+              No posts yet. When people share publicly, they&apos;ll show up here — or create the first one.
+            </p>
             {emptyCta}
           </div>
         ) : (
           <>
             {posts.map((p) => (
-              <PostCard key={p.id} post={p} onPostUpdated={bumpParent} onPostRemoved={bumpParent} />
+              <PostCard
+                key={p.id}
+                post={p}
+                showAuthorFollow={showAuthorFollow}
+                onPostUpdated={bumpParent}
+                onPostRemoved={bumpParent}
+              />
             ))}
             <div ref={sentinelRef} className="h-6" aria-hidden />
             {loadingMore && (

@@ -24,6 +24,9 @@ self.addEventListener("push", (event) => {
       icon: "/favicon.ico",
       data: { url: data.url || "/" },
       tag: data.tag || "lifepilot",
+      silent: false,
+      vibrate: [180, 80, 180],
+      requireInteraction: false,
     })
   );
 });

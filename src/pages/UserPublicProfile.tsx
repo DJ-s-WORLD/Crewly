@@ -23,6 +23,7 @@ import ProfileHeaderHorizontal from "@/components/ProfileHeaderHorizontal";
 import FollowButton from "@/components/FollowButton";
 import PrivateAccountNotice from "@/components/PrivateAccountNotice";
 import PostsGrid from "@/components/PostsGrid";
+import TodayMoodSection from "@/components/TodayMoodSection";
 import { Flame, MessageCircle, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import type { Tables } from "@/integrations/supabase/types";
@@ -97,8 +98,9 @@ const UserPublicProfile = () => {
     }
   }, [user, userId, navigate]);
 
+  /** Public profile: posts + lists like Instagram. Private: only after accepted follow. */
   const canSeePrivateContent = !profile?.is_private || followingThem;
-  const canOpenLists = canSeePrivateContent;
+  const canOpenFollowLists = canSeePrivateContent;
 
   const openChat = async () => {
     if (!userId) return;
@@ -130,9 +132,9 @@ const UserPublicProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen pb-24">
       <MainHeader avatarUrl={meAvatar} avatarFallback={meName || "U"} />
-      <div className="mx-auto max-w-lg px-4 pt-2">
+      <div className="mx-auto max-w-lg pt-2">
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -142,7 +144,7 @@ const UserPublicProfile = () => {
           Back
         </button>
 
-        <div className="rounded-2xl bg-card p-4 shadow-sm border border-border/50 space-y-3">
+        <div className="bg-card/80 pb-5 p-2">
           <ProfileHeaderHorizontal
             avatarUrl={profile.avatar_url || ""}
             username={profile.name || "Member"}
@@ -158,12 +160,12 @@ const UserPublicProfile = () => {
             followers={followers}
             following={following}
             onFollowersClick={
-              canOpenLists
+              canOpenFollowLists
                 ? () => setFollowModal("followers")
                 : () => toast.message("This account is private")
             }
             onFollowingClick={
-              canOpenLists
+              canOpenFollowLists
                 ? () => setFollowModal("following")
                 : () => toast.message("This account is private")
             }
@@ -193,6 +195,10 @@ const UserPublicProfile = () => {
                 Message
               </Button>
             )}
+          </div>
+
+          <div className="mt-4 px-1">
+            <TodayMoodSection mood={profile.mood} moodUpdatedAt={profile.mood_updated_at} />
           </div>
         </div>
 
@@ -246,20 +252,22 @@ const UserPublicProfile = () => {
           )}
         </div>
 
-        <div className="mt-5 rounded-2xl bg-card p-4 shadow-sm border border-border/50">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recent activity</h2>
-          {acts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No public activity yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {acts.map((a) => (
-                <li key={a.id} className="rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground border border-border/40">
-                  {a.message}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {canSeePrivateContent && (
+          <div className="mt-5 rounded-2xl bg-card p-4 shadow-sm border border-border/50">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Recent activity</h2>
+            {acts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No public activity yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {acts.map((a) => (
+                  <li key={a.id} className="rounded-xl bg-background/80 px-3 py-2 text-sm text-foreground border border-border/40">
+                    {a.message}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <p className="text-center mt-6 text-xs text-muted-foreground">
           <Link to="/feed" className="text-primary font-medium">

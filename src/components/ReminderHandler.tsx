@@ -36,9 +36,10 @@ const ReminderHandler = () => {
 
       const { data } = await supabase
         .from("tasks")
-        .select("id, title, remind_at, timezone, completed")
+        .select("id, title, remind_at, timezone, completed, reminder_push_sent_at")
         .eq("user_id", user.id)
         .eq("completed", false)
+        .is("reminder_push_sent_at", null)
         .not("remind_at", "is", null)
         .gte("remind_at", now.toISOString())
         .lte("remind_at", soon.toISOString())

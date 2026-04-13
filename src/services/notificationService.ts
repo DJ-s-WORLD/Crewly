@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { registerFcmDeviceToken } from "@/lib/fcmRegister";
 
 const PROMPT_KEY = "lifepilot_push_prompt_v1";
 
@@ -46,34 +47,34 @@ export async function runPushOnboarding(userId: string): Promise<void> {
   if (!reg || permission !== "granted") return;
 
   const vapid = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
-  if (!vapid || typeof vapid !== "string" || vapid.length < 20) {
-    return;
+  if (vapid && typeof vapid === "string" && vapid.length >= 20) {
+    try {
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapid.trim()),
+      });
+      const key = sub.getKey("p256dh");
+      const auth = sub.getKey("auth");
+      if (key && auth) {
+        await supabase
+          .from("web_push_subscriptions")
+          .delete()
+          .eq("user_id", userId)
+          .eq("endpoint", sub.endpoint);
+        await supabase.from("web_push_subscriptions").insert({
+          user_id: userId,
+          endpoint: sub.endpoint,
+          p256dh: arrayBufferToBase64(key),
+          auth: arrayBufferToBase64(auth),
+          updated_at: new Date().toISOString(),
+        });
+      }
+    } catch {
+      /* VAPID mismatch or table missing — FCM / foreground may still work */
+    }
   }
 
-  try {
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapid.trim()),
-    });
-    const key = sub.getKey("p256dh");
-    const auth = sub.getKey("auth");
-    if (!key || !auth) return;
-
-    await supabase
-      .from("web_push_subscriptions")
-      .delete()
-      .eq("user_id", userId)
-      .eq("endpoint", sub.endpoint);
-    await supabase.from("web_push_subscriptions").insert({
-      user_id: userId,
-      endpoint: sub.endpoint,
-      p256dh: arrayBufferToBase64(key),
-      auth: arrayBufferToBase64(auth),
-      updated_at: new Date().toISOString(),
-    });
-  } catch {
-    /* VAPID mismatch or table missing — foreground notifications still work */
-  }
+  await registerFcmDeviceToken(userId, reg);
 }
 
 /** In-app toast (top-right) + system notification when permitted. */

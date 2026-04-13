@@ -6,3 +6,6 @@ project_id = "ckepekynnvhdgwcrfzje"
 
 [functions.ai-chat]
 verify_jwt = false
+
+[functions.send-task-reminders]
+verify_jwt = false

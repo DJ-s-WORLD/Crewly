@@ -1,4 +1,4 @@
-import { Archive, Lock, Shield, LogOut } from "lucide-react";
+import { Archive, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { colorPresets, useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
@@ -64,26 +64,48 @@ const SettingsModal = ({ open, onClose, email, joinedLabel, onSignOut, onViewArc
               App Background / Theme
             </p>
             <p className="text-xs text-muted-foreground mb-3">Pick a backdrop tint for the app</p>
-            <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {colorPresets.map((preset) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => setBgColor(preset.bg)}
-                  className={cn(
-                    "flex flex-col items-center gap-1 rounded-xl p-2 transition-all active:scale-95",
-                    bgColor === preset.bg ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:bg-accent/60"
-                  )}
-                >
-                  <div
-                    className="h-9 w-9 rounded-full border border-border shadow-inner"
-                    style={{ backgroundColor: preset.bg || "hsl(var(--muted))" }}
-                  />
-                  <span className="text-[9px] text-muted-foreground text-center leading-tight">{preset.label}</span>
-                </button>
-              ))}
+            <div className="-mx-1 px-2">
+              <div
+                className={cn(
+                  "flex flex-nowrap gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-1 px-2 py-2",
+                  "[scrollbar-width:thin] [scrollbar-color:hsl(var(--muted-foreground)/0.35)_transparent]",
+                  "snap-x snap-mandatory"
+                )}
+              >
+                {colorPresets.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setBgColor(preset.bg)}
+                    className={cn(
+                      "flex shrink-0 snap-start flex-col items-center gap-1 rounded-xl p-2 min-w-[4.25rem] transition-all active:scale-95",
+                      bgColor === preset.bg ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:bg-accent/60"
+                    )}
+                  >
+                    <div
+                      className="h-9 w-9 rounded-full border border-border shadow-inner shrink-0"
+                      style={{ backgroundColor: preset.bg || "hsl(var(--muted))" }}
+                    />
+                    <span className="text-[9px] text-muted-foreground text-center leading-tight max-w-[4.5rem] truncate w-full">
+                      {preset.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
+
+          {onViewArchived && (
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full rounded-2xl h-12 gap-2 font-semibold border border-border/80 shadow-sm active:scale-[0.99] transition-transform"
+              onClick={onViewArchived}
+            >
+              <Archive className="h-4 w-4 shrink-0" />
+              View archived posts
+            </Button>
+          )}
 
           {(privacyValue !== undefined || onTogglePrivacy) && (
             <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3">
@@ -114,23 +136,7 @@ const SettingsModal = ({ open, onClose, email, joinedLabel, onSignOut, onViewArc
                   />
                 </button>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
-                <Lock className="h-3 w-3" />
-                Security section is being expanded (change password / delete account next).
-              </p>
             </div>
-          )}
-
-          {onViewArchived && (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full rounded-2xl h-12 gap-2 font-semibold border border-border/80 shadow-sm active:scale-[0.99] transition-transform"
-              onClick={onViewArchived}
-            >
-              <Archive className="h-4 w-4 shrink-0" />
-              View archived posts
-            </Button>
           )}
 
           <Button
@@ -140,7 +146,7 @@ const SettingsModal = ({ open, onClose, email, joinedLabel, onSignOut, onViewArc
             onClick={() => void onSignOut()}
           >
             <span className="mr-1" aria-hidden>
-              🚪
+              <LogOut className="h-4 w-4 shrink-0" />
             </span>
             Sign Out
           </Button>

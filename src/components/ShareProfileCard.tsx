@@ -70,7 +70,7 @@ const ShareProfileCard = ({
             "bg-gradient-to-br from-primary/25 via-background to-accent/20 border border-primary/10"
           )}
         >
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/90">LifePilot</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/90">Crewly</p>
           <div className="mt-4 flex justify-center">
             <Avatar className="h-20 w-20 ring-4 ring-background shadow-lg">
               <AvatarImage src={avatarUrl || undefined} className="object-cover" />

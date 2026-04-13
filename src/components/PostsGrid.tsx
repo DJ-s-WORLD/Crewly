@@ -67,7 +67,7 @@ const PostsGrid = ({ refreshKey = 0, profileUserId }: Props) => {
 
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center justify-between px-2">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Posts</h3>
       </div>
 
@@ -85,7 +85,7 @@ const PostsGrid = ({ refreshKey = 0, profileUserId }: Props) => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2 px-2">
             {posts.map((p) => {
               const hasImage = !!(p.image_url && p.image_url.trim());
               const text = (p.content || "").trim();

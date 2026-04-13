@@ -31,7 +31,9 @@ const Feed = () => {
       <MainHeader title="Feed" avatarUrl={avatarUrl} avatarFallback={profileName || user?.email || "U"} />
 
       <div className="mx-auto max-w-lg px-4 pt-3 flex justify-between items-center gap-2">
-        <p className="text-xs text-muted-foreground">Posts from people you follow — and yours.</p>
+        <p className="text-xs text-muted-foreground">
+          Discover public posts from everyone, plus posts from people you follow (private accounts stay private).
+        </p>
         <Button size="sm" className="rounded-full gap-1 shrink-0 h-9" onClick={() => openCreatePost()}>
           Post
         </Button>
